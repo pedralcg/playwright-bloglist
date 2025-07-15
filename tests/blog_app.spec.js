@@ -173,6 +173,82 @@ describe('Blog app', () => {
       const removeButtonOtherUser = blogContainerOtherUser.getByRole('button', { name: 'remove' });
       await expect(removeButtonOtherUser).not.toBeVisible();
       })
+
+      // TEST 5.23: Los blogs están ordenados por likes, el blog con más likes en primer lugar.
+      test('blogs are ordered by likes, with the most liked blog first', async ({ page }) => {
+        // Usamos el texto visible para verificar que el usuario está logueado
+        await expect(page.getByText('Test User logged in')).toBeVisible();
+        // 1. Crear varios blogs con diferentes números de likes
+        // Blog 1: 5 likes
+        await page.getByRole('button', { name: 'create new blog' }).click();
+        await page.getByLabel('title:').fill('Blog C - 5 Likes');
+        await page.getByLabel('author:').fill('Author C');
+        await page.getByLabel('url:').fill('http://blogc.com');
+        await page.getByRole('button', { name: 'create' }).click();
+        await expect(page.getByText('Blog C - 5 Likes Author C')).toBeVisible();
+        const blogCContainer = page.locator('.blogItem', { hasText: 'Blog C - 5 Likes Author C' });
+        await blogCContainer.getByRole('button', { name: 'view' }).click();
+        for (let i = 0; i <= 5; i++) {
+          await blogCContainer.getByRole('button', { name: 'like' }).click();
+          await expect(blogCContainer.getByTestId('blog-likes')).toHaveText(i.toString());
+        }
+        await expect(blogCContainer.getByTestId('blog-likes')).toHaveText('5');
+        await blogCContainer.getByRole('button', { name: 'hide' }).click();
+        // Blog 2: 10 likes
+        await page.getByRole('button', { name: 'create new blog' }).click();
+        await page.getByLabel('title:').fill('Blog A - 10 Likes');
+        await page.getByLabel('author:').fill('Author A');
+        await page.getByLabel('url:').fill('http://bloga.com');
+        await page.getByRole('button', { name: 'create' }).click();
+        await expect(page.getByText('Blog A - 10 Likes Author A')).toBeVisible();
+        const blogAContainer = page.locator('.blogItem', { hasText: 'Blog A - 10 Likes Author A' });
+        await blogAContainer.getByRole('button', { name: 'view' }).click();
+        for (let i = 0; i <= 10; i++) {
+          await blogAContainer.getByRole('button', { name: 'like' }).click();
+          await expect(blogAContainer.getByTestId('blog-likes')).toHaveText(i.toString());
+        }
+        await expect(blogAContainer.getByTestId('blog-likes')).toHaveText('10');
+        await blogAContainer.getByRole('button', { name: 'hide' }).click();
+        // Blog 3: 2 likes
+        await page.getByRole('button', { name: 'create new blog' }).click();
+        await page.getByLabel('title:').fill('Blog B - 2 Likes');
+        await page.getByLabel('author:').fill('Author B');
+        await page.getByLabel('url:').fill('http://blogb.com');
+        await page.getByRole('button', { name: 'create' }).click();
+        await expect(page.getByText('Blog B - 2 Likes Author B')).toBeVisible();
+        const blogBContainer = page.locator('.blogItem', { hasText: 'Blog B - 2 Likes Author B' });
+        await blogBContainer.getByRole('button', { name: 'view' }).click();
+        for (let i = 0; i <= 2; i++) {
+          await blogBContainer.getByRole('button', { name: 'like' }).click();
+          await expect(blogBContainer.getByTestId('blog-likes')).toHaveText(i.toString());
+        }
+        await expect(blogBContainer.getByTestId('blog-likes')).toHaveText('2');
+        await blogBContainer.getByRole('button', { name: 'hide' }).click();
+        // Volver a cargar la página para asegurar que el orden se actualiza si no es reactivo al 100%
+        await page.reload();
+      // Usamos el texto visible para verificar que el usuario sigue logueado después de la recarga
+        await expect(page.getByText('Test User logged in')).toBeVisible();
+        // 2. Obtener los títulos de los blogs en el orden en que aparecen en la página
+        // Esperar a que el primer blog esperado sea visible antes de obtener todos los elementos
+        // Usamos el selector de clase '.blogItem' para obtener todos los contenedores de blog.
+        await expect(page.getByText('Blog A - 10 Likes Author A')).toBeVisible();
+        const blogItems = await page.locator('.blogItem').all();
+        const displayedTitles = [];
+        for (const item of blogItems) {
+          // Para cada blog, obtenemos su título usando el data-testid
+          const titleElement = await item.getByTestId('blog-title');
+          const title = await titleElement.textContent();
+          displayedTitles.push(title);
+        }
+        // 3. Definir el orden esperado (de mayor a menor likes)
+        const expectedOrder = [
+          'Blog A - 10 Likes',
+          'Blog C - 5 Likes',
+          'Blog B - 2 Likes'
+        ];
+        // 4. Afirmar que el orden de los blogs mostrados coincide con el orden esperado
+        expect(displayedTitles).toEqual(expectedOrder);
+      });
     })
 
 })
