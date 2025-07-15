@@ -35,27 +35,50 @@ describe('Blog app', () => {
 
     // Bloque 'describe' para las pruebas de inicio de sesión.
     describe('Login', () => {
-        // Test 5.18a: Verificar que el inicio de sesión es exitoso con credenciales correctas.
-        test('succeeds with correct credentials', async ({ page }) => {
-        // Busca el elemento con la clase 'success' (de tu Notification component) y verifica que contenga el texto esperado.
-        await loginWith(page, 'testuser', 'testpassword')
-        // Espera que el mensaje persistente de "logged in" del usuario sea visible.
-        await expect(page.getByText('Test User logged in')).toBeVisible()
-        // Espera que el formulario de inicio de sesión YA NO sea visible.
-        await expect(page.getByText('Log in to application')).not.toBeVisible()
-        })
+      // Test 5.18a: Verificar que el inicio de sesión es exitoso con credenciales correctas.
+      test('succeeds with correct credentials', async ({ page }) => {
+      // Busca el elemento con la clase 'success' (de tu Notification component) y verifica que contenga el texto esperado.
+      await loginWith(page, 'testuser', 'testpassword')
+      // Espera que el mensaje persistente de "logged in" del usuario sea visible.
+      await expect(page.getByText('Test User logged in')).toBeVisible()
+      // Espera que el formulario de inicio de sesión YA NO sea visible.
+      await expect(page.getByText('Log in to application')).not.toBeVisible()
+      })
 
-        // Test 5.18b: Verificar que el inicio de sesión falla con credenciales incorrectas.
-        test('fails with wrong credentials', async ({ page }) => {
-        // Intenta iniciar sesión con una contraseña incorrecta.
-        await loginWith(page, 'testuser', 'wrongpassword')
-        // Espera que el mensaje de error sea visible.
-        await expect(page.locator('.error')).toContainText('Wrong credentials')
-        // Espera que el mensaje de "logged in" NO sea visible.
-        await expect(page.getByText('Welcome, Test User!')).not.toBeVisible()
-        //? Opcional: Si el formulario de login permanece visible o el botón de login sigue ahí, puedes verificarlo.
-        await expect(page.getByRole('button', { name: 'login' })).toBeVisible()
-        })
+      // Test 5.18b: Verificar que el inicio de sesión falla con credenciales incorrectas.
+      test('fails with wrong credentials', async ({ page }) => {
+      // Intenta iniciar sesión con una contraseña incorrecta.
+      await loginWith(page, 'testuser', 'wrongpassword')
+      // Espera que el mensaje de error sea visible.
+      await expect(page.locator('.error')).toContainText('Wrong credentials')
+      // Espera que el mensaje de "logged in" NO sea visible.
+      await expect(page.getByText('Welcome, Test User!')).not.toBeVisible()
+      //? Opcional: Si el formulario de login permanece visible o el botón de login sigue ahí, puedes verificarlo.
+      await expect(page.getByRole('button', { name: 'login' })).toBeVisible()
+      })
+    })
+
+    // Bloque 'describe' para tests que requieren que el usuario esté logueado.
+    describe('when logged in', () => {
+      // Asegura que el usuario siempre esté logueado al inicio de cada test aquí.
+      beforeEach(async ({ page }) => {
+        await loginWith(page, 'testuser', 'testpassword')
+        await expect(page.getByText('Test User logged in')).toBeVisible()
+      })
+
+      // Test 5.19: Verificar que un nuevo blog puede ser creado.
+      test('a new blog can be created', async ({ page }) => {
+        // 1. Haz clic en el botón para mostrar el formulario de creación de blog.
+        await page.getByRole('button', { name: 'create new blog' }).click()
+        // 2. Rellena los campos del formulario de creación de blog.
+        await page.getByLabel('title:').fill('A blog created by Playwright')
+        await page.getByLabel('author:').fill('Playwright Author')
+        await page.getByLabel('url:').fill('http://playwright.dev/blog')
+        // 3. Haz clic en el botón para guardar/crear el blog.
+        await page.getByRole('button', { name: 'create' }).click()
+        // 4. Verifica que el título y autor del blog recién creado son visibles en la lista de blogs.
+        await expect(page.getByText('A blog created by Playwright Playwright Author')).toBeVisible()
+      })
     })
 
 })
