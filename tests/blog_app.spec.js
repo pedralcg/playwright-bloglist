@@ -16,7 +16,15 @@ describe('Blog app', () => {
         password: 'testpassword'
       }
     })
-    // 3. Navega a la página principal de tu aplicación frontend.
+    // 3. Crea un segundo usuario para pruebas de autorización (Ejercicio 5.22).
+    await request.post('http://localhost:3003/api/users', {
+      data: {
+        name: 'Other User',
+        username: 'otheruser',
+        password: 'otherpassword'
+      }
+    })
+    // 4. Navega a la página principal de tu aplicación frontend.
     // 'baseURL' configurada en playwright.config.js (ej. 'http://localhost:5173').
     await page.goto('/')
   })
@@ -130,6 +138,40 @@ describe('Blog app', () => {
         await expect(blogContainer).not.toBeVisible();
         // Verifica que el texto del blog ya no está en la página.
         await expect(page.getByText(`${blogTitle} ${blogAuthor}`)).not.toBeVisible();
+      })
+
+      // TEST 5.22: Solo el creador puede ver el botón de eliminación.
+    test('only the creator can see the delete button', async ({ page }) => {
+      const blogTitle = 'Blog by testuser';
+      const blogAuthor = 'Test Author';
+      const blogUrl = 'http://testuser.blog';
+      // 1. Crea un blog con 'testuser' (Ya logueado como 'testuser' por beforeEach).
+      await page.getByRole('button', { name: 'create new blog' }).click();
+      await page.getByLabel('title:').fill(blogTitle);
+      await page.getByLabel('author:').fill(blogAuthor);
+      await page.getByLabel('url:').fill(blogUrl);
+      await page.getByRole('button', { name: 'create' }).click();
+      // 2. Verifica que el blog aparece en la lista.
+      const blogContainer = page.locator('.blogItem', { hasText: `${blogTitle} ${blogAuthor}` });
+      await expect(blogContainer).toBeVisible();
+      // 3. Haz clic en el botón 'view' para mostrar los detalles del blog.
+      await blogContainer.getByRole('button', { name: 'view' }).click();
+      // 4. Verifica que el botón 'remove' ES visible para el creador ('testuser').
+      const removeButton = blogContainer.getByRole('button', { name: 'remove' });
+      await expect(removeButton).toBeVisible();
+      // 5. Cierra la sesión de 'testuser'.
+      await page.getByRole('button', { name: 'logout' }).click();
+      await expect(page.getByText('Log in to application')).toBeVisible(); // Confirma que se ha deslogueado
+      // 6. Inicia sesión como 'otheruser'.
+      await loginWith(page, 'otheruser', 'otherpassword');
+      await expect(page.getByText('Other User logged in')).toBeVisible();
+      // 7. Haz clic en el botón 'view' del blog creado por 'testuser' (ahora como 'otheruser').
+      const blogContainerOtherUser = page.locator('.blogItem', { hasText: `${blogTitle} ${blogAuthor}` });
+      await expect(blogContainerOtherUser).toBeVisible();
+      await blogContainerOtherUser.getByRole('button', { name: 'view' }).click();
+      // 8. Verifica que el botón 'remove' NO ES visible para 'otheruser'.
+      const removeButtonOtherUser = blogContainerOtherUser.getByRole('button', { name: 'remove' });
+      await expect(removeButtonOtherUser).not.toBeVisible();
       })
     })
 
