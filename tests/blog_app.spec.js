@@ -79,6 +79,28 @@ describe('Blog app', () => {
         // 4. Verifica que el título y autor del blog recién creado son visibles en la lista de blogs.
         await expect(page.getByText('A blog created by Playwright Playwright Author')).toBeVisible()
       })
+
+      // Test 5.20: Verificar que un blog puede ser editado (ej. dar like).
+      test('a blog can be liked', async ({ page }) => {
+        // 1. Crea un nuevo blog para tener algo que editar.
+        await page.getByRole('button', { name: 'create new blog' }).click()
+        await page.getByLabel('title:').fill('Blog to be liked')
+        await page.getByLabel('author:').fill('Like Tester')
+        await page.getByLabel('url:').fill('http://test.com/like-blog')
+        await page.getByRole('button', { name: 'create' }).click()
+        // 2. Verifica que el blog aparece en la lista y obtiene su contenedor principal.
+        const blogContainer = page.locator('.blogItem', { hasText: 'Blog to be liked Like Tester' });
+        await expect(blogContainer).toBeVisible(); // Asegura que el contenedor completo del blog es visible
+        // 3. Haz clic en el botón 'view' para mostrar los detalles del blog (incluyendo el botón 'like').
+        await blogContainer.getByRole('button', { name: 'view' }).click()
+        // 4. Verifica que el número inicial de likes es 0 (o el valor por defecto de tu backend).
+        const initialLikesElement = blogContainer.getByTestId('blog-likes')
+        await expect(initialLikesElement).toHaveText('0') // Asume que empieza en 0 likes
+        // 5. Haz clic en el botón 'like'.
+        await blogContainer.getByRole('button', { name: 'like' }).click()
+        // 6. Verifica que el número de likes ha aumentado.
+        await expect(initialLikesElement).toHaveText('1') // Ahora debería ser 1 like
+      })
     })
 
 })
