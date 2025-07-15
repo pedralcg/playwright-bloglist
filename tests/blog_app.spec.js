@@ -101,6 +101,36 @@ describe('Blog app', () => {
         // 6. Verifica que el número de likes ha aumentado.
         await expect(initialLikesElement).toHaveText('1') // Ahora debería ser 1 like
       })
+
+      // TEST 5.21: Verificar que el usuario que creó un blog puede eliminarlo.
+      test('the user who created a blog can delete it', async ({ page }) => {
+        const blogTitle = 'Blog to be deleted';
+        const blogAuthor = 'Deleter User';
+        const blogUrl = 'http://delete.me';
+        // 1. Crea un nuevo blog con el usuario logueado.
+        await page.getByRole('button', { name: 'create new blog' }).click();
+        await page.getByLabel('title:').fill(blogTitle);
+        await page.getByLabel('author:').fill(blogAuthor);
+        await page.getByLabel('url:').fill(blogUrl);
+        await page.getByRole('button', { name: 'create' }).click();
+        // 2. Verifica que el blog aparece en la lista.
+        const blogContainer = page.locator('.blogItem', { hasText: `${blogTitle} ${blogAuthor}` });
+        await expect(blogContainer).toBeVisible();
+        // 3. Haz clic en el botón 'view' para mostrar los detalles del blog.
+        await blogContainer.getByRole('button', { name: 'view' }).click();
+        // 4. Configura el manejador del diálogo 'confirm'.
+        page.on('dialog', async dialog => {
+          expect(dialog.type()).toContain('confirm'); // Opcional: verifica que es un diálogo de confirmación
+          expect(dialog.message()).toContain(`Remove blog "${blogTitle}" by ${blogAuthor}?`); // Opcional: verifica el mensaje
+          await dialog.accept(); // Acepta el diálogo (simula hacer clic en 'OK')
+        });
+        // 5. Haz clic en el botón 'remove'.
+        await blogContainer.getByRole('button', { name: 'remove' }).click();
+        // 6. Verifica que el blog ya no es visible en la lista.
+        await expect(blogContainer).not.toBeVisible();
+        // Verifica que el texto del blog ya no está en la página.
+        await expect(page.getByText(`${blogTitle} ${blogAuthor}`)).not.toBeVisible();
+      })
     })
 
 })
